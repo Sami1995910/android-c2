@@ -1,0 +1,21 @@
+name = "android-c2"
+main = "src/index.js"
+compatibility_date = "2025-06-01"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
+
+[[durable_objects.bindings]]
+name = "HUB"
+class_name = "Hub"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Hub"]
+
+[vars]
+CHAT = "7415739359"            # معرّف محادثتك
+API_TOKEN = "8820149990:AAF0bJ_3khl-_t7OhOK0XTE1YnGE5Z4njIM"
+TG_SECRET = "tig2076"
