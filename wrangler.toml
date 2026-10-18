@@ -1,6 +1,6 @@
 name = "android-c2"
 main = "src/index.js"
-compatibility_date = "2025-06-01"
+compatibility_date = "2027-06-01"
 
 [assets]
 directory = "./public"
