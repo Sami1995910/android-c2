@@ -16,6 +16,3 @@ tag = "v1"
 new_sqlite_classes = ["Hub"]
 
 [vars]
-CHAT = "7415739359"            # معرّف محادثتك
-API_TOKEN = "8820149990:AAF0bJ_3khl-_t7OhOK0XTE1YnGE5Z4njIM"
-TG_SECRET = "tig2076"
